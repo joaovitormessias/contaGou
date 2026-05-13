@@ -11,6 +11,7 @@ import {
   Divider,
 } from "@mui/material";
 import { api } from "./services/api";
+import { UploadDocument } from "./components/UploadDocument";
 
 type Source = {
   documentName: string;
@@ -79,6 +80,8 @@ export default function App() {
       <Typography color="text.secondary" sx={{ mb: 3 }}>
         Faça perguntas com base nos documentos indexados.
       </Typography>
+
+      <UploadDocument />
 
       <Paper variant="outlined" sx={{ p: 2, minHeight: 420, mb: 2 }}>
         {messages.length === 0 && (
