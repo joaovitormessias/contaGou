@@ -1,0 +1,184 @@
+{
+  "name": "MVP - ingestao de documentos",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "ingest-document",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "5fd7938b-1718-41b6-ac90-cd8e2f730985",
+      "name": "Webhook",
+      "webhookId": "e8dcf471-c312-4871-bc12-27d0a674012c"
+    },
+    {
+      "parameters": {
+        "operation": "pdf",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1.1,
+      "position": [
+        208,
+        0
+      ],
+      "id": "84b05c88-5b5f-41d7-8e7c-a1be7295f82a",
+      "name": "Extract from File"
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all();\n\nconst output = [];\n\nfunction chunkText(text, maxLength = 1200, overlap = 200) {\n  const cleaned = text\n    .replace(/\\s+/g, \" \")\n    .trim();\n\n  const chunks = [];\n\n  let start = 0;\n\n  while (start < cleaned.length) {\n    const end = Math.min(start + maxLength, cleaned.length);\n    const chunk = cleaned.slice(start, end).trim();\n\n    if (chunk.length > 100) {\n      chunks.push(chunk);\n    }\n\n    start += maxLength - overlap;\n  }\n\n  return chunks;\n}\n\nfor (const item of items) {\n  const json = item.json ?? {};\n\n  const text =\n    json.text ??\n    json.data ??\n    json.content ??\n    json.extractedText ??\n    \"\";\n\n  const documentName =\n    json.fileName ??\n    json.filename ??\n    json.name ??\n    \"documento.pdf\";\n\n  const chunks = chunkText(text);\n\n  chunks.forEach((content, index) => {\n    output.push({\n      json: {\n        documentName,\n        pageNumber: null,\n        chunkIndex: index,\n        content,\n      },\n    });\n  });\n}\n\nreturn output;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        416,
+        0
+      ],
+      "id": "51a4c673-545b-4c44-b498-6009f7a2d035",
+      "name": "Divide chunks"
+    },
+    {
+      "parameters": {
+        "url": " https://api.openai.com/v1/embeddings",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBearerAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"model\": \"text-embedding-3-small\",\n  \"input\": \"={{ $json.content }}\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        624,
+        0
+      ],
+      "id": "31f2d7f2-d6e8-40d1-80fa-db7c9033f546",
+      "name": "HTTP Request - openai",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "IMVEm4T7C4rG7Ouc",
+          "name": "Header Auth account"
+        },
+        "httpBearerAuth": {
+          "id": "XHb8iUrrJJGjfaU4",
+          "name": "Bearer Auth account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all();\n\nreturn items.map((item) => {\n  const embedding = item.json.data?.[0]?.embedding;\n\n  if (!embedding) {\n    throw new Error(\"Embedding não encontrado na resposta da OpenAI.\");\n  }\n\n  return {\n    json: {\n      documentName: item.json.documentName,\n      pageNumber: item.json.pageNumber,\n      content: item.json.content,\n      embedding: `[${embedding.join(\",\")}]`,\n    },\n  };\n});"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        832,
+        0
+      ],
+      "id": "920dc322-b0b2-4487-a91e-d42431013212",
+      "name": "prepara embedding"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "INSERT INTO document_chunks (\n  document_name,\n  page_number,\n  content,\n  embedding\n)\nVALUES (\n  $1,\n  $2,\n  $3,\n  $4::vector\n);",
+        "options": {
+          "queryReplacement": "documentName,pageNumber,content,embedding"
+        }
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        1040,
+        0
+      ],
+      "id": "5fadcf83-08d1-4717-b37a-7aba31e5fd3c",
+      "name": "Execute a SQL query",
+      "credentials": {
+        "postgres": {
+          "id": "kL7WLAjuohZUmCq5",
+          "name": "Postgres account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Extract from File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract from File": {
+      "main": [
+        [
+          {
+            "node": "Divide chunks",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Divide chunks": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request - openai",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request - openai": {
+      "main": [
+        [
+          {
+            "node": "prepara embedding",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "prepara embedding": {
+      "main": [
+        [
+          {
+            "node": "Execute a SQL query",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "94d3b6b2-5c6b-4f63-a421-141b99c243cd",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "5282df1d68d9f27a35407c28282e53fbaa3cf15f5efbfa6adf1649c214695528"
+  },
+  "id": "lgOufY0ESCv4CYsw",
+  "tags": []
+}
