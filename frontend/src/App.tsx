@@ -32,6 +32,7 @@ export default function App() {
   async function handleSend() {
     const trimmed = question.trim();
 
+    // Evita requisicoes vazias ou multiplos envios enquanto IA ainda responde
     if (!trimmed || loading) return;
 
     const userMessage: Message = {
@@ -60,7 +61,8 @@ export default function App() {
         ...current,
         {
           role: "assistant",
-          content: "Erro ao consultar a IA. Verifique se o backend está rodando.",
+          content:
+            "Erro ao consultar a IA. Verifique se o backend está rodando.",
         },
       ]);
     } finally {
@@ -102,7 +104,11 @@ export default function App() {
                 </Typography>
 
                 {message.sources.map((source, sourceIndex) => (
-                  <Typography key={sourceIndex} variant="caption" display="block">
+                  <Typography
+                    key={sourceIndex}
+                    variant="caption"
+                    display="block"
+                  >
                     {source.documentName}
                     {source.pageNumber ? `, página ${source.pageNumber}` : ""}
                     {source.similarity
