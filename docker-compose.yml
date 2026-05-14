@@ -41,8 +41,12 @@ services:
     restart: unless-stopped
     environment:
       VITE_API_URL: http://localhost:3001
+      VITE_N8N_INGEST_URL: http://localhost:5678/webhook/ingest-document
     ports:
       - "5173:5173"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
     depends_on:
       - backend
 
