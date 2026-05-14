@@ -6,7 +6,9 @@
         "httpMethod": "POST",
         "path": "ingest-document",
         "responseMode": "lastNode",
-        "options": {}
+        "options": {
+          "allowedOrigins": "*"
+        }
       },
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2.1,
@@ -21,6 +23,7 @@
     {
       "parameters": {
         "operation": "pdf",
+        "binaryPropertyName": "file",
         "options": {}
       },
       "type": "n8n-nodes-base.extractFromFile",
@@ -47,7 +50,8 @@
     },
     {
       "parameters": {
-        "url": " https://api.openai.com/v1/embeddings",
+        "method": "POST",
+        "url": "https://api.openai.com/v1/embeddings",
         "authentication": "genericCredentialType",
         "genericAuthType": "httpBearerAuth",
         "sendBody": true,
@@ -76,7 +80,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const items = $input.all();\n\nreturn items.map((item) => {\n  const embedding = item.json.data?.[0]?.embedding;\n\n  if (!embedding) {\n    throw new Error(\"Embedding não encontrado na resposta da OpenAI.\");\n  }\n\n  return {\n    json: {\n      documentName: item.json.documentName,\n      pageNumber: item.json.pageNumber,\n      content: item.json.content,\n      embedding: `[${embedding.join(\",\")}]`,\n    },\n  };\n});"
+        "jsCode": "const items = $input.all();\nconst originalItems = $(\"Divide chunks\").all();\n\nreturn items.map((item, index) => {\n  const embeddingArray = item.json.data?.[0]?.embedding;\n\n  if (!embeddingArray) {\n    throw new Error(\"Embedding não encontrado na resposta da OpenAI.\");\n  }\n\n  const originalItem = originalItems[index]?.json;\n\n  if (!originalItem) {\n    throw new Error(`Item original não encontrado no índice ${index}.`);\n  }\n\n  return {\n    json: {\n      document_name:\n        originalItem.documentName ??\n        originalItem.document_name ??\n        \"documento.pdf\",\n\n      page_number:\n        originalItem.pageNumber ??\n        originalItem.page_number ??\n        null,\n\n      content:\n        originalItem.content,\n\n      embedding: `[${embeddingArray.join(\",\")}]`,\n    },\n  };\n});"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -92,7 +96,7 @@
         "operation": "executeQuery",
         "query": "INSERT INTO document_chunks (\n  document_name,\n  page_number,\n  content,\n  embedding\n)\nVALUES (\n  $1,\n  $2,\n  $3,\n  $4::vector\n);",
         "options": {
-          "queryReplacement": "documentName,pageNumber,content,embedding"
+          "queryReplacement": "={{ [ $json.document_name, $json.page_number, $json.content, $json.embedding ] }}"
         }
       },
       "type": "n8n-nodes-base.postgres",
@@ -174,7 +178,7 @@
     "executionOrder": "v1",
     "binaryMode": "separate"
   },
-  "versionId": "94d3b6b2-5c6b-4f63-a421-141b99c243cd",
+  "versionId": "830111b5-c7fe-400d-ae93-ece8b9c70fe8",
   "meta": {
     "templateCredsSetupCompleted": true,
     "instanceId": "5282df1d68d9f27a35407c28282e53fbaa3cf15f5efbfa6adf1649c214695528"
