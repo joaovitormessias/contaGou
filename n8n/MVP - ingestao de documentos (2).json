@@ -37,7 +37,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const items = $input.all();\n\nconst output = [];\n\nfunction chunkText(text, maxLength = 1200, overlap = 200) {\n  const cleaned = text\n    .replace(/\\s+/g, \" \")\n    .trim();\n\n  const chunks = [];\n\n  let start = 0;\n\n  while (start < cleaned.length) {\n    const end = Math.min(start + maxLength, cleaned.length);\n    const chunk = cleaned.slice(start, end).trim();\n\n    if (chunk.length > 100) {\n      chunks.push(chunk);\n    }\n\n    start += maxLength - overlap;\n  }\n\n  return chunks;\n}\n\nfor (const item of items) {\n  const json = item.json ?? {};\n\n  const text =\n    json.text ??\n    json.data ??\n    json.content ??\n    json.extractedText ??\n    \"\";\n\n  const documentName =\n    json.fileName ??\n    json.filename ??\n    json.name ??\n    \"documento.pdf\";\n\n  const chunks = chunkText(text);\n\n  chunks.forEach((content, index) => {\n    output.push({\n      json: {\n        documentName,\n        pageNumber: null,\n        chunkIndex: index,\n        content,\n      },\n    });\n  });\n}\n\nreturn output;"
+        "jsCode": "const items = $input.all();\nconst webhookItems = $(\"Webhook\").all();\n\nconst output = [];\n\nfunction chunkText(text, maxLength = 1200, overlap = 200) {\n  const cleaned = text\n    .replace(/\\s+/g, \" \")\n    .trim();\n\n  const chunks = [];\n  let start = 0;\n\n  while (start < cleaned.length) {\n    const end = Math.min(start + maxLength, cleaned.length);\n    const chunk = cleaned.slice(start, end).trim();\n\n    if (chunk.length > 100) {\n      chunks.push(chunk);\n    }\n\n    start += maxLength - overlap;\n  }\n\n  return chunks;\n}\n\nfor (const item of items) {\n  const json = item.json ?? {};\n\n  const text =\n    json.text ??\n    json.data ??\n    json.content ??\n    json.extractedText ??\n    \"\";\n\n  const uploadedFileName =\n    webhookItems[0]?.binary?.file?.fileName ??\n    webhookItems[0]?.binary?.data?.fileName ??\n    webhookItems[0]?.json?.fileName ??\n    webhookItems[0]?.json?.filename ??\n    \"documento.pdf\";\n\n  const chunks = chunkText(text);\n\n  chunks.forEach((content, index) => {\n    output.push({\n      json: {\n        documentName: uploadedFileName,\n        pageNumber: null,\n        chunkIndex: index,\n        content,\n      },\n    });\n  });\n}\n\nreturn output;"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -178,7 +178,7 @@
     "executionOrder": "v1",
     "binaryMode": "separate"
   },
-  "versionId": "830111b5-c7fe-400d-ae93-ece8b9c70fe8",
+  "versionId": "406ed5f4-b923-4027-8631-acccd2f7076c",
   "meta": {
     "templateCredsSetupCompleted": true,
     "instanceId": "5282df1d68d9f27a35407c28282e53fbaa3cf15f5efbfa6adf1649c214695528"
