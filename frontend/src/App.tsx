@@ -148,8 +148,16 @@ export default function App() {
                   visiveis.
                 </Typography>
               </Box>
-
-              <Stack direction="row" gap={2} flexWrap="wrap">
+              <Stack
+                direction="row"
+                spacing={4}
+                useFlexGap
+                sx={{
+                  flexWrap: "wrap",
+                  alignItems: "stretch",
+                  justifyContent: { xs: "flex-start", md: "flex-end" },
+                }}
+              >
                 <MetricCard
                   icon={<DescriptionRoundedIcon />}
                   label="Mensagens"
@@ -161,7 +169,7 @@ export default function App() {
                   label="Fontes usadas"
                   value={String(totalSources)}
                 />
-              </Stack>
+              </Stack>{" "}
             </Stack>
           </Box>
 
