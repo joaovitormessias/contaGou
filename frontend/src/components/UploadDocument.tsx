@@ -110,11 +110,15 @@ export function UploadDocument() {
     <Paper
       variant="outlined"
       sx={{
+        width: "100%",
+        maxWidth: 340,
+        mx: "auto",
         p: 2.5,
         mb: 2,
-        borderRadius: 4,
+        borderRadius: "18px",
         background:
-          "linear-gradient(180deg, rgba(255,255,255,0.95) 0%, rgba(248,250,252,0.95) 100%)",
+          "linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(248,250,252,0.98) 100%)",
+        boxShadow: "0 12px 28px rgba(15, 23, 42, 0.05)",
       }}
     >
       {" "}
