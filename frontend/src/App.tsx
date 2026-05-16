@@ -276,7 +276,12 @@ export default function App() {
               <Divider />
 
               <Box sx={{ p: { xs: 2, md: 3 }, backgroundColor: "#ffffff" }}>
-                <Stack direction={{ xs: "column", sm: "row" }} gap={1.5}>
+                <Stack
+                  direction={{ xs: "column", sm: "row" }}
+                  spacing={2}
+                  useFlexGap
+                  alignItems="stretch"
+                >
                   <TextField
                     fullWidth
                     multiline
@@ -291,6 +296,11 @@ export default function App() {
                         handleSend();
                       }
                     }}
+                    sx={{
+                      "& .MuiOutlinedInput-root": {
+                        borderRadius: "16px",
+                      },
+                    }}
                   />
 
                   <Button
@@ -299,11 +309,15 @@ export default function App() {
                     onClick={handleSend}
                     disabled={loading || !question.trim()}
                     endIcon={<SendRoundedIcon />}
-                    sx={{ minWidth: { xs: "100%", sm: 140 } }}
+                    sx={{
+                      minWidth: { xs: "100%", sm: 140 },
+                      borderRadius: "16px",
+                      px: 3,
+                    }}
                   >
                     Enviar
                   </Button>
-                </Stack>
+                </Stack>{" "}
               </Box>
             </Box>
           </Box>
