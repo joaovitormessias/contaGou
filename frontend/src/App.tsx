@@ -230,12 +230,12 @@ export default function App() {
                 {messages.length === 0 ? (
                   <EmptyState />
                 ) : (
-                  <Stack gap={4}>
+                  <Stack spacing={4}>
                     {messages.map((message, index) => (
                       <MessageBubble key={index} message={message} />
                     ))}
                     {loading && (
-                      <Stack direction="row" gap={3} alignItems="center">
+                      <Stack direction="row" spacing={3} alignItems="center">
                         <Avatar
                           sx={{
                             bgcolor: "primary.light",
