@@ -230,11 +230,10 @@ export default function App() {
                 {messages.length === 0 ? (
                   <EmptyState />
                 ) : (
-                  <Stack gap={2.5}>
+                  <Stack gap={4}>
                     {messages.map((message, index) => (
                       <MessageBubble key={index} message={message} />
                     ))}
-
                     {loading && (
                       <Stack direction="row" gap={1.5} alignItems="center">
                         <Avatar
@@ -410,6 +409,9 @@ function MessageBubble({ message }: { message: Message }) {
       gap={1.5}
       justifyContent={isUser ? "flex-end" : "flex-start"}
       alignItems="flex-start"
+      sx={{
+        width: "100%",
+      }}
     >
       {!isUser && (
         <Avatar sx={{ bgcolor: "primary.light", color: "primary.main" }}>
@@ -417,7 +419,15 @@ function MessageBubble({ message }: { message: Message }) {
         </Avatar>
       )}
 
-      <Box sx={{ maxWidth: { xs: "90%", md: "72%" } }}>
+      <Box
+        sx={{
+          maxWidth: {
+            xs: "calc(100% - 56px)",
+            md: isUser ? "58%" : "74%",
+          },
+          minWidth: 0,
+        }}
+      >
         <Paper
           elevation={0}
           sx={{
@@ -433,6 +443,7 @@ function MessageBubble({ message }: { message: Message }) {
             boxShadow: isUser
               ? "0 14px 30px rgba(49, 87, 255, 0.20)"
               : "0 12px 28px rgba(15, 23, 42, 0.08)",
+            overflow: "hidden",
           }}
         >
           <Typography
@@ -449,6 +460,8 @@ function MessageBubble({ message }: { message: Message }) {
 
           <Box
             sx={{
+              overflowWrap: "break-word",
+              wordBreak: "break-word",
               "& p": { m: 0, mb: 1 },
               "& p:last-child": { mb: 0 },
               "& ul": { pl: 2.5, my: 1 },
@@ -460,7 +473,17 @@ function MessageBubble({ message }: { message: Message }) {
         </Paper>
 
         {message.sources && message.sources.length > 0 && (
-          <Stack direction="row" gap={1} flexWrap="wrap" sx={{ mt: 1 }}>
+          <Stack
+            direction="row"
+            gap={1}
+            flexWrap="wrap"
+            useFlexGap
+            sx={{
+              mt: 1.25,
+              maxWidth: "100%",
+              overflow: "hidden",
+            }}
+          >
             {message.sources.map((source, sourceIndex) => (
               <Chip
                 key={sourceIndex}
@@ -475,7 +498,22 @@ function MessageBubble({ message }: { message: Message }) {
                 ]
                   .filter(Boolean)
                   .join(" · ")}
-                sx={{ bgcolor: "#eef2ff", color: "#1e35b7" }}
+                sx={{
+                  maxWidth: "100%",
+                  bgcolor: "#eef2ff",
+                  color: "#1e35b7",
+                  "& .MuiChip-label": {
+                    display: "block",
+                    maxWidth: {
+                      xs: 180,
+                      sm: 240,
+                      md: 280,
+                    },
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                    whiteSpace: "nowrap",
+                  },
+                }}
               />
             ))}
           </Stack>
