@@ -4,8 +4,9 @@ import type {
   ChatResponse,
   IntentClassification,
 } from "../types/chat.types.js";
-import { searchDocumentChunks } from "./vector.service.js";
 import { documentAnswerPrompt } from "../prompts/document-answer.prompt.js";
+import { buildDocumentSearchPlan } from "./document-search-plan.service.js";
+import { searchDocumentChunksWithPlan } from "./vector.service.js";
 
 // Similaridade minima exigida para aceitar um trecho como texto relevante
 const MIN_SIMILARITY = Number(process.env.MIN_SIMILARITY ?? 0.55);
@@ -28,19 +29,29 @@ export async function answerWithDocuments(
   question: string,
   classification: IntentClassification,
 ): Promise<ChatResponse> {
-  const chunks = await searchDocumentChunks(question);
+  const searchPlan = await buildDocumentSearchPlan(question);
+
+  console.log("Plano de busca documental:", searchPlan);
+
+  const chunks = await searchDocumentChunksWithPlan(searchPlan);
 
   console.log(
-    "Busca vetorial:",
+    "Busca documental:",
     chunks.map((chunk) => ({
       document: chunk.document_name,
       page: chunk.page_number,
       similarity: chunk.similarity,
-      preview: chunk.content.slice(0, 120),
+      preview: chunk.content.slice(0, 160),
     })),
   );
 
-  if (chunks.length === 0 || chunks[0].similarity < MIN_SIMILARITY) {
+  // Resultados lexicais recebem similiridade 1 e nao dependem do limite vetorial
+  const hasLexicalResult = chunks.some((chunk) => chunk.similarity === 1);
+
+  if (
+    chunks.length === 0 ||
+    (!hasLexicalResult && chunks[0].similarity < MIN_SIMILARITY)
+  ) {
     return {
       answer: "Nao encontrei essa informacao nos documentos fornecidos.",
       sources: [],
@@ -48,7 +59,6 @@ export async function answerWithDocuments(
       confidence: classification.confidence,
     };
   }
-
   const context = formatContext(chunks);
 
   const completion = await openai.chat.completions.create({
