@@ -431,11 +431,11 @@ function MessageBubble({ message }: { message: Message }) {
         <Paper
           elevation={0}
           sx={{
-            px: 2,
-            py: 1.5,
-            borderRadius: 4,
-            borderTopRightRadius: isUser ? 8 : 24,
-            borderTopLeftRadius: isUser ? 24 : 8,
+            px: 2.25,
+            py: 1.75,
+            borderRadius: "18px",
+            borderTopRightRadius: isUser ? "8px" : "18px",
+            borderTopLeftRadius: isUser ? "18px" : "8px",
             color: isUser ? "white" : "text.primary",
             backgroundColor: isUser ? "primary.main" : "white",
             border: "1px solid",
@@ -443,7 +443,7 @@ function MessageBubble({ message }: { message: Message }) {
             boxShadow: isUser
               ? "0 14px 30px rgba(49, 87, 255, 0.20)"
               : "0 12px 28px rgba(15, 23, 42, 0.08)",
-            overflow: "hidden",
+            overflow: "visible",
           }}
         >
           <Typography
