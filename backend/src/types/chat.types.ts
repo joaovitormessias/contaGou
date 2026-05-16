@@ -34,3 +34,19 @@ export type ChatResponse = {
   intent?: Intent;
   confidence?: number;
 };
+
+// Representa estrategia de busca que sera usada para recuperar informacoes
+export type DocumentSearchPlan = {
+  searchType: "semantic" | "lexical" | "hybrid";
+  semanticQuery: string;
+  keywordQueries: string[];
+  expectedAnswerType:
+    | "company_name"
+    | "tax_id"
+    | "date"
+    | "money"
+    | "accounting_concept"
+    | "summary"
+    | "unknown";
+  reason: string;
+};
