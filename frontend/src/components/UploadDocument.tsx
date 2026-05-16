@@ -107,15 +107,23 @@ export function UploadDocument() {
   }
 
   return (
-    <Paper variant="outlined" sx={{ p: 2, mb: 2 }}>
-      <Typography variant="h6" fontWeight={700} gutterBottom>
+    <Paper
+      variant="outlined"
+      sx={{
+        p: 2.5,
+        mb: 2,
+        borderRadius: 4,
+        background:
+          "linear-gradient(180deg, rgba(255,255,255,0.95) 0%, rgba(248,250,252,0.95) 100%)",
+      }}
+    >
+      {" "}
+      <Typography variant="h6" fontWeight={800} gutterBottom>
         Upload de documentos
       </Typography>
-
-      <Typography color="text.secondary" sx={{ mb: 2 }}>
-        Envie um ou mais PDFs para indexacao no banco vetorial.
-      </Typography>
-
+      <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+        Selecione um ou mais PDFs para indexacao no banco vetorial.
+      </Typography>{" "}
       <Box
         sx={{ display: "flex", gap: 1, alignItems: "center", flexWrap: "wrap" }}
       >
@@ -158,9 +166,7 @@ export function UploadDocument() {
           Limpar concluidos
         </Button>
       </Box>
-
       {uploading && <LinearProgress sx={{ mt: 2 }} />}
-
       {items.length > 0 && (
         <Box sx={{ mt: 2 }}>
           {items.map((item, index) => (
