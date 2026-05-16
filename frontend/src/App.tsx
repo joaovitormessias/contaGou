@@ -235,7 +235,7 @@ export default function App() {
                       <MessageBubble key={index} message={message} />
                     ))}
                     {loading && (
-                      <Stack direction="row" gap={1.5} alignItems="center">
+                      <Stack direction="row" gap={3} alignItems="center">
                         <Avatar
                           sx={{
                             bgcolor: "primary.light",
