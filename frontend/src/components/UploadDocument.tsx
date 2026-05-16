@@ -10,52 +10,110 @@ import {
 import UploadFileIcon from "@mui/icons-material/UploadFile";
 import { uploadDocument } from "../services/upload";
 
-type UploadStatus = "idle" | "uploading" | "success" | "error";
+type UploadStatus = "pending" | "uploading" | "success" | "error";
+
+type UploadItem = {
+  file: File;
+  status: UploadStatus;
+  message?: string;
+};
 
 export function UploadDocument() {
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [status, setStatus] = useState<UploadStatus>("idle");
-  const [message, setMessage] = useState<string>("");
+  const [items, setItems] = useState<UploadItem[]>([]);
+  const [uploading, setUploading] = useState(false);
 
-  async function handleUpload() {
-    if (!selectedFile) {
-      setStatus("error");
-      setMessage("Selecione um arquivo antes de enviar.");
-      return;
+  function handleSelectFiles(files: FileList | null) {
+    if (!files) return;
+
+    const selectedFiles = Array.from(files);
+
+    // Mantem na fila apenas arquivos compativeis com o fluxo de ingestao
+    const pdfFiles = selectedFiles.filter(
+      (file) => file.type === "application/pdf",
+    );
+
+    const newItems: UploadItem[] = pdfFiles.map((file) => ({
+      file,
+      status: "pending",
+    }));
+
+    setItems((current) => [...current, ...newItems]);
+  }
+
+  function removeFile(indexToRemove: number) {
+    setItems((current) =>
+      current.filter((_item, index) => index !== indexToRemove),
+    );
+  }
+
+  async function handleUploadAll() {
+    if (items.length === 0 || uploading) return;
+
+    setUploading(true);
+
+    // Envia os arquivos em sequencia para manter o status individual de cada item
+    for (let index = 0; index < items.length; index += 1) {
+      const currentItem = items[index];
+
+      // Evita reenviar arquivos que ja foram processados com sucesso
+      if (currentItem.status === "success") {
+        continue;
+      }
+
+      setItems((current) =>
+        current.map((item, itemIndex) =>
+          itemIndex === index
+            ? { ...item, status: "uploading", message: "Enviando..." }
+            : item,
+        ),
+      );
+
+      try {
+        await uploadDocument(currentItem.file);
+
+        setItems((current) =>
+          current.map((item, itemIndex) =>
+            itemIndex === index
+              ? {
+                  ...item,
+                  status: "success",
+                  message: "Documento enviado e processado.",
+                }
+              : item,
+          ),
+        );
+      } catch (error) {
+        console.error(error);
+
+        setItems((current) =>
+          current.map((item, itemIndex) =>
+            itemIndex === index
+              ? {
+                  ...item,
+                  status: "error",
+                  message: "Erro ao enviar este documento.",
+                }
+              : item,
+          ),
+        );
+      }
     }
 
-    // O fluxo de ingestao foi preparado para processar apenas PDFs
-    if (selectedFile.type !== "application/pdf") {
-      setStatus("error");
-      setMessage("Envie apenas arquivos PDF.");
-      return;
-    }
+    setUploading(false);
+  }
 
-    try {
-      setStatus("uploading");
-      setMessage("");
-
-      // Envia o arquivo para o webhook/fluxo responsavel pela indexação no n8n
-      await uploadDocument(selectedFile);
-
-      setStatus("success");
-      setMessage("Documento enviado para processamento com sucesso.");
-      setSelectedFile(null);
-    } catch (error) {
-      console.error(error);
-      setStatus("error");
-      setMessage("Erro ao enviar o documento para o n8n.");
-    }
+  function clearCompleted() {
+    setItems((current) => current.filter((item) => item.status !== "success"));
   }
 
   return (
     <Paper variant="outlined" sx={{ p: 2, mb: 2 }}>
       <Typography variant="h6" fontWeight={700} gutterBottom>
-        Upload de documento
+        Upload de documentos
       </Typography>
 
       <Typography color="text.secondary" sx={{ mb: 2 }}>
-        Envie um PDF para indexação no banco vetorial.
+        Envie um ou mais PDFs para indexacao no banco vetorial.
       </Typography>
 
       <Box
@@ -65,43 +123,99 @@ export function UploadDocument() {
           variant="outlined"
           component="label"
           startIcon={<UploadFileIcon />}
+          disabled={uploading}
         >
-          Selecionar PDF
+          Selecionar PDFs
           <input
             hidden
+            multiple
             type="file"
             accept="application/pdf"
             onChange={(event) => {
-              const file = event.target.files?.[0] ?? null;
-              setSelectedFile(file);
-              setStatus("idle");
-              setMessage("");
+              handleSelectFiles(event.target.files);
+
+              // Permite selecionar o mesmo arquivo novamente depois
+              event.target.value = "";
             }}
           />
         </Button>
 
         <Button
           variant="contained"
-          onClick={handleUpload}
-          disabled={!selectedFile || status === "uploading"}
+          onClick={handleUploadAll}
+          disabled={items.length === 0 || uploading}
         >
-          Enviar
+          Enviar todos
         </Button>
 
-        {selectedFile && (
-          <Typography variant="body2">{selectedFile.name}</Typography>
-        )}
+        <Button
+          variant="text"
+          onClick={clearCompleted}
+          disabled={
+            uploading || items.every((item) => item.status !== "success")
+          }
+        >
+          Limpar concluidos
+        </Button>
       </Box>
 
-      {status === "uploading" && <LinearProgress sx={{ mt: 2 }} />}
+      {uploading && <LinearProgress sx={{ mt: 2 }} />}
 
-      {message && (
-        <Alert
-          severity={status === "success" ? "success" : "error"}
-          sx={{ mt: 2 }}
-        >
-          {message}
-        </Alert>
+      {items.length > 0 && (
+        <Box sx={{ mt: 2 }}>
+          {items.map((item, index) => (
+            <Paper
+              key={`${item.file.name}-${index}`}
+              variant="outlined"
+              sx={{ p: 1.5, mb: 1 }}
+            >
+              <Box
+                sx={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  gap: 1,
+                  alignItems: "center",
+                  flexWrap: "wrap",
+                }}
+              >
+                <Box>
+                  <Typography fontWeight={600}>{item.file.name}</Typography>
+
+                  <Typography variant="caption" color="text.secondary">
+                    {(item.file.size / 1024 / 1024).toFixed(2)} MB
+                  </Typography>
+                </Box>
+
+                <Box sx={{ display: "flex", gap: 1, alignItems: "center" }}>
+                  <Typography variant="body2">
+                    {item.status === "pending" && "Pendente"}
+                    {item.status === "uploading" && "Enviando"}
+                    {item.status === "success" && "Concluido"}
+                    {item.status === "error" && "Erro"}
+                  </Typography>
+
+                  <Button
+                    size="small"
+                    color="inherit"
+                    onClick={() => removeFile(index)}
+                    disabled={uploading}
+                  >
+                    Remover
+                  </Button>
+                </Box>
+              </Box>
+
+              {item.message && (
+                <Alert
+                  severity={item.status === "error" ? "error" : "success"}
+                  sx={{ mt: 1 }}
+                >
+                  {item.message}
+                </Alert>
+              )}
+            </Paper>
+          ))}
+        </Box>
       )}
     </Paper>
   );
