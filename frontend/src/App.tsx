@@ -321,12 +321,14 @@ function MetricCard({
     <Card
       variant="outlined"
       sx={{
-        minWidth: 150,
+        width: 176,
+        minHeight: 112,
         p: 2,
         color: "white",
         backgroundColor: "rgba(255,255,255,0.12)",
-        borderColor: "rgba(255,255,255,0.18)",
+        borderColor: "rgba(255,255,255,0.22)",
         backdropFilter: "blur(12px)",
+        borderRadius: 3,
       }}
     >
       <Stack direction="row" gap={1.5} alignItems="center">
