@@ -7,6 +7,7 @@ import type {
 import { documentAnswerPrompt } from "../prompts/document-answer.prompt.js";
 import { buildDocumentSearchPlan } from "./document-search-plan.service.js";
 import { searchDocumentChunksWithPlan } from "./vector.service.js";
+import { strictAccountingModel } from "../langchain.js";
 
 // Similaridade minima exigida para aceitar um trecho como texto relevante
 const MIN_SIMILARITY = Number(process.env.MIN_SIMILARITY ?? 0.55);
@@ -61,30 +62,27 @@ export async function answerWithDocuments(
   }
   const context = formatContext(chunks);
 
-  const completion = await openai.chat.completions.create({
-    model: "gpt-5.4",
-    temperature: 0,
-    messages: [
-      {
-        role: "developer",
-        content: documentAnswerPrompt,
-      },
-      {
-        role: "user",
-        content: `
+  const completion = await strictAccountingModel.invoke([
+    {
+      role: "system",
+      content: documentAnswerPrompt,
+    },
+    {
+      role: "user",
+      content: ` 
 CONTEXTO DOCUMENTAL:
 ${context}
 
 PERGUNTA:
 ${question}
-        `.trim(),
-      },
-    ],
-  });
+    `.trim(),
+    },
+  ]);
 
   const answer =
-    completion.choices[0]?.message?.content ??
-    "Nao encontrei essa informacao nos documentos fornecidos.";
+    typeof completion.content === "string"
+      ? completion.content
+      : "Nao encontrei essa informacao nos documentos";
 
   const uniqueSources = Array.from(
     new Map(

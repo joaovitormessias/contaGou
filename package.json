@@ -1,0 +1,21 @@
+{
+  "name": "contagou",
+  "version": "1.0.0",
+  "description": "Aplicação web de chat especializada em contabilidade com respostas baseadas em documentos fornecidos.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/joaovitormessias/contaGou.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/joaovitormessias/contaGou/issues"
+  },
+  "homepage": "https://github.com/joaovitormessias/contaGou#readme"
+}

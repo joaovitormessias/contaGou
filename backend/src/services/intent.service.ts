@@ -1,70 +1,46 @@
-import { openai } from "../openai.js";
+import { z } from "zod";
 import type { IntentClassification } from "../types/chat.types.js";
 import { intentClassifierPrompt } from "../prompts/intent.prompt.js";
+import { searchPlannerModel } from "../langchain.js";
 
+const intentSchema = z.object({
+  intent: z.enum(["document_question", "general_accounting", "out_of_scope"]),
+  confidence: z.number().min(0).max(1),
+  reason: z.string(),
+});
+
+// Classifica a intencao do usuario
 export async function classifyIntent(
   question: string,
 ): Promise<IntentClassification> {
-  const completion = await openai.chat.completions.create({
-    model: "gpt-5.4",
-    temperature: 0,
-    // Garante que a classificacao siga um formato previsivel para o backend
-    response_format: {
-      type: "json_schema",
-      json_schema: {
+  try {
+    // Forca formato estruturado de saida
+    const structuredModel = searchPlannerModel.withStructuredOutput(
+      intentSchema,
+      {
         name: "intent_classification",
         strict: true,
-        schema: {
-          type: "object",
-          additionalProperties: false,
-          properties: {
-            intent: {
-              type: "string",
-              enum: ["document_question", "general_accounting", "out_of_scope"],
-            },
-            confidence: {
-              type: "number",
-              minimum: 0,
-              maximum: 1,
-            },
-            reason: {
-              type: "string",
-            },
-          },
-          required: ["intent", "confidence", "reason"],
-        },
       },
-    },
-    messages: [
+    );
+
+    const result = await structuredModel.invoke([
       {
-        role: "developer",
+        role: "system",
         content: intentClassifierPrompt,
       },
       {
         role: "user",
         content: question,
       },
-    ],
-  });
+    ]);
 
-  const content = completion.choices[0]?.message?.content;
-
-  if (!content) {
-    return {
-      intent: "out_of_scope",
-      confidence: 0,
-      reason: "O classificador nao retornou conteudo.",
-    };
-  }
-
-  try {
-    return JSON.parse(content) as IntentClassification;
+    return result;
   } catch {
-    // Em caso de resposta invalida, bloqueia por seguranca em vez de assumir uma intencao
+    // Fallback
     return {
       intent: "out_of_scope",
       confidence: 0,
-      reason: "Nao foi possivel interpretar a classificacao.",
+      reason: "Nao foi possivel classificar a pergunta com seguranca.",
     };
   }
 }

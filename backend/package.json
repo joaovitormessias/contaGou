@@ -8,11 +8,14 @@
     "start": "node dist/server.js"
   },
   "dependencies": {
+    "@langchain/core": "^1.1.46",
+    "@langchain/openai": "^1.4.5",
     "cors": "latest",
     "dotenv": "latest",
     "express": "latest",
     "openai": "^6.37.0",
-    "pg": "latest"
+    "pg": "latest",
+    "zod": "^4.4.3"
   },
   "devDependencies": {
     "@types/cors": "latest",

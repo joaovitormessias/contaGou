@@ -4,29 +4,27 @@ import type {
   IntentClassification,
 } from "../types/chat.types.js";
 import { generalAccountingPrompt } from "../prompts/general-accounting.prompt.js";
+import { generalAccountingMOdel } from "../langchain.js";
 
 export async function answerGeneralAccounting(
   question: string,
   classification: IntentClassification,
 ): Promise<ChatResponse> {
-  const completion = await openai.chat.completions.create({
-    model: "gpt-5.4",
-    temperature: 0.2,
-    messages: [
-      {
-        role: "developer",
-        content: generalAccountingPrompt,
-      },
-      {
-        role: "user",
-        content: question,
-      },
-    ],
-  });
+  const completion = await generalAccountingMOdel.invoke([
+    {
+      role: "system",
+      content: generalAccountingPrompt,
+    },
+    {
+      role: "user",
+      content: question,
+    },
+  ]);
 
   const answer =
-    completion.choices[0]?.message?.content ??
-    "Nao consegui gerar uma resposta contabil para essa pergunta.";
+    typeof completion.content === "string"
+      ? completion.content
+      : "Nao consegui gerar uma resposta contabil para essa pergunta";
 
   return {
     answer,

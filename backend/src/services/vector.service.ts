@@ -1,15 +1,11 @@
 import { pool } from "../db.js";
-import { openai } from "../openai.js";
 import type { Chunk, DocumentSearchPlan } from "../types/chat.types.js";
+import { embbedingsModel } from "../langchain.js";
 
 export async function searchDocumentChunks(question: string): Promise<Chunk[]> {
   // Gera o embedding da pergunta para permitir a busca semantica no banco vetorial
-  const embeddingResponse = await openai.embeddings.create({
-    model: "text-embedding-3-small",
-    input: question,
-  });
 
-  const questionEmbedding = embeddingResponse.data[0].embedding;
+  const questionEmbedding = await embbedingsModel.embedQuery(question);
 
   const searchResult = await pool.query<Chunk>(
     `
@@ -69,12 +65,7 @@ export async function searchDocumentChunksByVector(
   query: string,
 ): Promise<Chunk[]> {
   // Converte a consulta em embedding para executar busca semantica no pgvector
-  const embeddingResponse = await openai.embeddings.create({
-    model: "text-embedding-3-small",
-    input: query,
-  });
-
-  const queryEmbedding = embeddingResponse.data[0].embedding;
+  const queryEmbedding = await embbedingsModel.embedQuery(query);
 
   const result = await pool.query<Chunk>(
     `
