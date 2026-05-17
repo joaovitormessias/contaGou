@@ -12,12 +12,12 @@ import { searchDocumentChunksWithPlan } from "./vector.service.js";
 const MIN_SIMILARITY = Number(process.env.MIN_SIMILARITY ?? 0.55);
 
 function formatContext(chunks: Chunk[]): string {
-  // Organiza os chunks recuperados em um contexto rastreavel para o modelo
+  // Organiza os chunks recuperados em um contexto recuperavel
   return chunks
     .map((chunk: Chunk, index: number) => {
       return [
-        `Fonte ${index + 1}`,
-        `Documento: ${chunk.document_name}`,
+        `Trecho ${index + 1}`,
+        `Nome do documento: ${chunk.document_name}`,
         `Pagina: ${chunk.page_number ?? "nao informada"}`,
         `Conteudo: ${chunk.content}`,
       ].join("\n");
