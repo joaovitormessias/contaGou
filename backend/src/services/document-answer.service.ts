@@ -86,14 +86,23 @@ ${question}
     completion.choices[0]?.message?.content ??
     "Nao encontrei essa informacao nos documentos fornecidos.";
 
+  const uniqueSources = Array.from(
+    new Map(
+      chunks.map((chunk) => [
+        `${chunk.document_name}-${chunk.page_number ?? "sem-pagina"}`,
+        {
+          documentName: chunk.document_name,
+          pageNumber: chunk.page_number,
+          similarity: chunk.similarity,
+        },
+      ]),
+    ).values(),
+  );
+
   return {
     answer,
     intent: classification.intent,
     confidence: classification.confidence,
-    sources: chunks.map((chunk) => ({
-      documentName: chunk.document_name,
-      pageNumber: chunk.page_number,
-      similarity: chunk.similarity,
-    })),
+    sources: uniqueSources,
   };
 }
