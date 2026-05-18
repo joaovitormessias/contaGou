@@ -45,7 +45,7 @@ Explicar:
 ## Confiabilidade
 
 Explicar que:
-- A IA responde apenas com base nos documentos
+- A IA responde perguntas com base em documentos e perguntas gerais
 - Caso não exista contexto, retorna mensagem padrão
 - Todas as respostas trazem fontes
 
