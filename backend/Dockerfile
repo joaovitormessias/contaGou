@@ -3,7 +3,9 @@ FROM node:lts-alpine
 WORKDIR /app
 
 COPY package*.json ./
-RUN npm install
+COPY .npmrc ./
+
+RUN npm ci
 
 COPY tsconfig.json ./
 COPY src ./src

@@ -5,6 +5,8 @@ import { embeddingsModel } from "../langchain.js";
 import crypto from "node:crypto";
 import { getLangChainVectorStore } from "./pgvector-store.service.js";
 
+const USE_LANGCHAIN_VECTOR_STORE =
+  process.env.USE_LANGCHAIN_VECTOR_STORE === "true";
 export async function searchDocumentChunks(question: string): Promise<Chunk[]> {
   // Gera o embedding da pergunta para permitir a busca semantica no banco vetorial
 
@@ -127,7 +129,6 @@ function mergeChunks(primary: Chunk[], secondary: Chunk[]): Chunk[] {
 export async function searchDocumentChunksWithPlan(
   plan: DocumentSearchPlan,
 ): Promise<Chunk[]> {
-  // Executa apenas as estrategias definidas no plano de busca gerado para a pergunta
   const lexicalChunks =
     plan.searchType === "lexical" || plan.searchType === "hybrid"
       ? await searchDocumentChunksByKeywords(plan.keywordQueries)
@@ -135,7 +136,9 @@ export async function searchDocumentChunksWithPlan(
 
   const vectorChunks =
     plan.searchType === "semantic" || plan.searchType === "hybrid"
-      ? await searchDocumentChunksByVector(plan.semanticQuery)
+      ? USE_LANGCHAIN_VECTOR_STORE
+        ? await searchDocumentChunksByLangChainVector(plan.semanticQuery)
+        : await searchDocumentChunksByVector(plan.semanticQuery)
       : [];
 
   return mergeChunks(lexicalChunks, vectorChunks);

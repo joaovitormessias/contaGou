@@ -1,4 +1,3 @@
-import { openai } from "../openai.js";
 import type {
   Chunk,
   ChatResponse,

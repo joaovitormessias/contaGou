@@ -3,13 +3,13 @@ import type {
   IntentClassification,
 } from "../types/chat.types.js";
 import { generalAccountingPrompt } from "../prompts/general-accounting.prompt.js";
-import { generalAccountingMOdel } from "../langchain.js";
+import { generalAccountingModel } from "../langchain.js";
 
 export async function answerGeneralAccounting(
   question: string,
   classification: IntentClassification,
 ): Promise<ChatResponse> {
-  const completion = await generalAccountingMOdel.invoke([
+  const completion = await generalAccountingModel.invoke([
     {
       role: "system",
       content: generalAccountingPrompt,

@@ -7,7 +7,7 @@ export const strictAccountingModel = new ChatOpenAI({
 });
 
 // IA de atendimento geral
-export const generalAccountingMOdel = new ChatOpenAI({
+export const generalAccountingModel = new ChatOpenAI({
   model: process.env.OPENAI_MODEL ?? "gpt-5.4",
   temperature: 0.2,
 });
@@ -20,5 +20,5 @@ export const searchPlannerModel = new ChatOpenAI({
 
 // Embbeding
 export const embeddingsModel = new OpenAIEmbeddings({
-  model: process.env.OPENAI_EMBEDDING_MODEL ?? "text-embedding-3-large",
+  model: process.env.OPENAI_EMBEDDING_MODEL ?? "text-embedding-3-small",
 });
