@@ -61,23 +61,38 @@ export async function answerWithDocuments(
   }
   const context = formatContext(chunks);
 
-  const completion = await strictAccountingModel.invoke([
-    {
-      role: "system",
-      content: documentAnswerPrompt,
-    },
-    {
-      role: "user",
-      content: ` 
+  const completion = await strictAccountingModel.invoke(
+    [
+      {
+        role: "system",
+        content: documentAnswerPrompt,
+      },
+      {
+        role: "user",
+        content: `
 CONTEXTO DOCUMENTAL:
 ${context}
 
 PERGUNTA:
 ${question}
-    `.trim(),
+      `.trim(),
+      },
+    ],
+    {
+      runName: "document_answer_generation",
+      tags: ["contagou", "document_answer", "rag"],
+      metadata: {
+        intent: classification.intent,
+        confidence: classification.confidence,
+        chunks: chunks.length,
+        sources: chunks.map((chunk) => ({
+          document: chunk.document_name,
+          page: chunk.page_number,
+          similarity: chunk.similarity,
+        })),
+      },
     },
-  ]);
-
+  );
   const answer =
     typeof completion.content === "string"
       ? completion.content

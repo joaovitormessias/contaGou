@@ -23,17 +23,25 @@ export async function classifyIntent(
       },
     );
 
-    const result = await structuredModel.invoke([
+    const result = await structuredModel.invoke(
+      [
+        {
+          role: "system",
+          content: intentClassifierPrompt,
+        },
+        {
+          role: "user",
+          content: question,
+        },
+      ],
       {
-        role: "system",
-        content: intentClassifierPrompt,
+        runName: "intent_classifier",
+        tags: ["contagou", "intent"],
+        metadata: {
+          inputLength: question.length,
+        },
       },
-      {
-        role: "user",
-        content: question,
-      },
-    ]);
-
+    );
     return result;
   } catch {
     // Fallback

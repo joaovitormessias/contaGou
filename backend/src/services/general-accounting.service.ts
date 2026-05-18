@@ -9,16 +9,26 @@ export async function answerGeneralAccounting(
   question: string,
   classification: IntentClassification,
 ): Promise<ChatResponse> {
-  const completion = await generalAccountingModel.invoke([
+  const completion = await generalAccountingModel.invoke(
+    [
+      {
+        role: "system",
+        content: generalAccountingPrompt,
+      },
+      {
+        role: "user",
+        content: question,
+      },
+    ],
     {
-      role: "system",
-      content: generalAccountingPrompt,
+      runName: "general_accounting_answer",
+      tags: ["contagou", "general_accounting"],
+      metadata: {
+        intent: classification.intent,
+        confidence: classification.confidence,
+      },
     },
-    {
-      role: "user",
-      content: question,
-    },
-  ]);
+  );
 
   const answer =
     typeof completion.content === "string"

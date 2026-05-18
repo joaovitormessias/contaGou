@@ -33,16 +33,25 @@ export async function buildDocumentSearchPlan(
       },
     );
 
-    const result = await structuredModel.invoke([
+    const result = await structuredModel.invoke(
+      [
+        {
+          role: "system",
+          content: documentSearchPlanPrompt,
+        },
+        {
+          role: "user",
+          content: question,
+        },
+      ],
       {
-        role: "system",
-        content: documentSearchPlanPrompt,
+        runName: "document_search_plan",
+        tags: ["contagou", "search_plan", "rag"],
+        metadata: {
+          questionLength: question.length,
+        },
       },
-      {
-        role: "user",
-        content: question,
-      },
-    ]);
+    );
 
     return result;
   } catch {
