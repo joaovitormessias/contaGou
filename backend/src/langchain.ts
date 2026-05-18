@@ -19,6 +19,6 @@ export const searchPlannerModel = new ChatOpenAI({
 });
 
 // Embbeding
-export const embbedingsModel = new OpenAIEmbeddings({
+export const embeddingsModel = new OpenAIEmbeddings({
   model: process.env.OPENAI_EMBEDDING_MODEL ?? "text-embedding-3-large",
 });
