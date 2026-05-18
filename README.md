@@ -9,7 +9,9 @@ Aplicação web de chat especializada em contabilidade com respostas baseadas em
 - React
 - MUI
 - Node.js
-- OpenAI API
+- LangChain
+- LangGraph
+- LangSmith
 - n8n
 - PostgreSQL + pgvector
 - Docker
