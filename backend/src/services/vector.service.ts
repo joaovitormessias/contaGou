@@ -1,11 +1,14 @@
 import { pool } from "../db.js";
 import type { Chunk, DocumentSearchPlan } from "../types/chat.types.js";
-import { embbedingsModel } from "../langchain.js";
+import { embeddingsModel } from "../langchain.js";
+
+import crypto from "node:crypto";
+import { getLangChainVectorStore } from "./pgvector-store.service.js";
 
 export async function searchDocumentChunks(question: string): Promise<Chunk[]> {
   // Gera o embedding da pergunta para permitir a busca semantica no banco vetorial
 
-  const questionEmbedding = await embbedingsModel.embedQuery(question);
+  const questionEmbedding = await embeddingsModel.embedQuery(question);
 
   const searchResult = await pool.query<Chunk>(
     `
@@ -65,7 +68,7 @@ export async function searchDocumentChunksByVector(
   query: string,
 ): Promise<Chunk[]> {
   // Converte a consulta em embedding para executar busca semantica no pgvector
-  const queryEmbedding = await embbedingsModel.embedQuery(query);
+  const queryEmbedding = await embeddingsModel.embedQuery(query);
 
   const result = await pool.query<Chunk>(
     `
@@ -85,6 +88,29 @@ export async function searchDocumentChunksByVector(
   return result.rows;
 }
 
+export async function searchDocumentChunksByLangChainVector(
+  query: string,
+): Promise<Chunk[]> {
+  const vectorStore = getLangChainVectorStore();
+
+  const results = await vectorStore.similaritySearchWithScore(query, 8);
+
+  return results.map(([document, score]) => {
+    const metadata = document.metadata as {
+      documentName?: string;
+      pageNumber?: number | null;
+      chunkIndex?: number;
+    };
+
+    return {
+      id: crypto.randomUUID(),
+      content: document.pageContent,
+      document_name: metadata.documentName ?? "documento.pdf",
+      page_number: metadata.pageNumber ?? null,
+      similarity: Math.max(0, Math.min(1, 1 - score)),
+    };
+  });
+}
 function mergeChunks(primary: Chunk[], secondary: Chunk[]): Chunk[] {
   const map = new Map<string, Chunk>();
 
