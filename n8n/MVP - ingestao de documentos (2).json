@@ -37,7 +37,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const items = $input.all();\nconst output = [];\n\nconst webhookItems = $(\"Webhook\").all();\nconst webhookItem = webhookItems[0];\n\nconst uploadedDocumentName =\n  webhookItem?.binary?.file?.fileName ??\n  webhookItem?.json?.fileName ??\n  webhookItem?.json?.filename ??\n  webhookItem?.json?.name ??\n  \"documento.pdf\";\n\nfunction chunkText(text, maxLength = 1200, overlap = 200) {\n  const cleaned = String(text ?? \"\")\n    .replace(/\\s+/g, \" \")\n    .trim();\n\n  const chunks = [];\n\n  let start = 0;\n\n  while (start < cleaned.length) {\n    const end = Math.min(start + maxLength, cleaned.length);\n    const chunk = cleaned.slice(start, end).trim();\n\n    if (chunk.length > 100) {\n      chunks.push(chunk);\n    }\n\n    start += maxLength - overlap;\n  }\n\n  return chunks;\n}\n\nfor (const item of items) {\n  const json = item.json ?? {};\n\n  const text =\n    json.text ??\n    json.data ??\n    json.content ??\n    json.extractedText ??\n    \"\";\n\n  const chunks = chunkText(text);\n\n  chunks.forEach((content, index) => {\n    output.push({\n      json: {\n        documentName: uploadedDocumentName,\n        pageNumber: null,\n        chunkIndex: index,\n        content,\n      },\n    });\n  });\n}\n\nreturn output;"
+        "jsCode": "const items = $input.all();\nconst output = [];\n\nconst webhookItems = $(\"Webhook\").all();\nconst webhookItem = webhookItems[0];\n\nconst uploadedDocumentName =\n  webhookItem?.binary?.file?.fileName ??\n  webhookItem?.json?.fileName ??\n  webhookItem?.json?.filename ??\n  webhookItem?.json?.name ??\n  \"documento.pdf\";\n\nfunction chunkText(text, maxLength = 1200, overlap = 200) {\n  const cleaned = String(text ?? \"\")\n    .replace(/\\s+/g, \" \")\n    .trim();\n\n  const chunks = [];\n\n  let start = 0;\n\n  while (start < cleaned.length) {\n    const end = Math.min(start + maxLength, cleaned.length);\n    const chunk = cleaned.slice(start, end).trim();\n\n    if (chunk.length > 0) {\n      chunks.push(chunk);\n    }\n\n    start += maxLength - overlap;\n  }\n\n  return chunks;\n}\n\nfor (const item of items) {\n  const json = item.json ?? {};\n\n  const text =\n    json.text ??\n    json.data ??\n    json.content ??\n    json.extractedText ??\n    \"\";\n\n  if (!String(text).trim()) {\n    throw new Error(\"PDF sem texto extraivel. Use um PDF com texto selecionavel; OCR nao esta implementado.\");\n  }\n  const chunks = chunkText(text);\n\n  chunks.forEach((content, index) => {\n    output.push({\n      json: {\n        documentName: uploadedDocumentName,\n        pageNumber: null,\n        chunkIndex: index,\n        content,\n      },\n    });\n  });\n}\n\nreturn output;"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -56,7 +56,7 @@
         "genericAuthType": "httpBearerAuth",
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={\n  \"model\": \"text-embedding-3-small\",\n  \"input\": \"={{ $json.content }}\"\n}",
+        "jsonBody": "={{ { model: \"text-embedding-3-small\", input: $json.content } }}",
         "options": {}
       },
       "type": "n8n-nodes-base.httpRequest",
@@ -66,17 +66,7 @@
         0
       ],
       "id": "31f2d7f2-d6e8-40d1-80fa-db7c9033f546",
-      "name": "HTTP Request - openai",
-      "credentials": {
-        "httpHeaderAuth": {
-          "id": "IMVEm4T7C4rG7Ouc",
-          "name": "Header Auth account"
-        },
-        "httpBearerAuth": {
-          "id": "XHb8iUrrJJGjfaU4",
-          "name": "Bearer Auth account"
-        }
-      }
+      "name": "HTTP Request - openai"
     },
     {
       "parameters": {
@@ -94,7 +84,7 @@
     {
       "parameters": {
         "operation": "executeQuery",
-        "query": "INSERT INTO document_chunks (\n  document_name,\n  page_number,\n  content,\n  embedding\n)\nVALUES (\n  $1,\n  $2,\n  $3,\n  $4::vector\n);",
+        "query": "WITH document AS (\n  INSERT INTO documents (name) VALUES ($1)\n  ON CONFLICT (name) DO UPDATE SET name = EXCLUDED.name\n  RETURNING id\n)\nINSERT INTO document_chunks (document_id, document_name, page_number, content, embedding)\nSELECT id, $1, $2, $3, $4::vector FROM document\nON CONFLICT DO NOTHING;",
         "options": {
           "queryReplacement": "={{ [ $json.document_name, $json.page_number, $json.content, $json.embedding ] }}"
         }
@@ -106,13 +96,7 @@
         0
       ],
       "id": "5fadcf83-08d1-4717-b37a-7aba31e5fd3c",
-      "name": "Execute a SQL query",
-      "credentials": {
-        "postgres": {
-          "id": "kL7WLAjuohZUmCq5",
-          "name": "Postgres account"
-        }
-      }
+      "name": "Execute a SQL query"
     }
   ],
   "pinData": {},
@@ -173,7 +157,7 @@
       ]
     }
   },
-  "active": true,
+  "active": false,
   "settings": {
     "executionOrder": "v1",
     "binaryMode": "separate"

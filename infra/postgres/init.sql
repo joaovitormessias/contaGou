@@ -21,3 +21,9 @@ CREATE TABLE IF NOT EXISTS document_chunks (
 CREATE INDEX IF NOT EXISTS document_chunks_embedding_hnsw_idx
 ON document_chunks
 USING hnsw (embedding vector_cosine_ops);
+
+-- Um nome identifica um documento no catalogo da demonstracao.
+-- Reenvio identico nao duplica trechos; novo nome cria documento separado.
+CREATE UNIQUE INDEX IF NOT EXISTS documents_name_unique_idx ON documents (name);
+CREATE UNIQUE INDEX IF NOT EXISTS document_chunks_content_unique_idx
+ON document_chunks (document_id, md5(content));

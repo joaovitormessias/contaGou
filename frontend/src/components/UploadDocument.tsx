@@ -122,7 +122,7 @@ export function UploadDocument() {
       }}
     >
       {" "}
-      <Typography variant="h6" fontWeight={800} gutterBottom>
+      <Typography variant="h6" sx={{ fontWeight: 800 }} gutterBottom>
         Upload de documentos
       </Typography>
       <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
@@ -189,7 +189,7 @@ export function UploadDocument() {
                 }}
               >
                 <Box>
-                  <Typography fontWeight={600}>{item.file.name}</Typography>
+                  <Typography sx={{ fontWeight: 600 }}>{item.file.name}</Typography>
 
                   <Typography variant="caption" color="text.secondary">
                     {(item.file.size / 1024 / 1024).toFixed(2)} MB

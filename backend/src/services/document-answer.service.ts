@@ -1,108 +1,81 @@
 import { openai } from "../openai.js";
-import type {
-  Chunk,
-  ChatResponse,
-  IntentClassification,
-} from "../types/chat.types.js";
+import type { Chunk, ChatResponse, IntentClassification } from "../types/chat.types.js";
 import { documentAnswerPrompt } from "../prompts/document-answer.prompt.js";
 import { buildDocumentSearchPlan } from "./document-search-plan.service.js";
 import { searchDocumentChunksWithPlan } from "./vector.service.js";
 
-// Similaridade minima exigida para aceitar um trecho como texto relevante
+export const NOT_FOUND = "Nao encontrei essa informacao nos documentos fornecidos.";
 const MIN_SIMILARITY = Number(process.env.MIN_SIMILARITY ?? 0.55);
+if (!Number.isFinite(MIN_SIMILARITY) || MIN_SIMILARITY < 0 || MIN_SIMILARITY > 1) {
+  throw new Error("MIN_SIMILARITY deve estar entre 0 e 1.");
+}
 
-function formatContext(chunks: Chunk[]): string {
-  // Organiza os chunks recuperados em um contexto recuperavel
-  return chunks
-    .map((chunk: Chunk, index: number) => {
-      return [
-        `Trecho ${index + 1}`,
-        `Nome do documento: ${chunk.document_name}`,
-        `Pagina: ${chunk.page_number ?? "nao informada"}`,
-        `Conteudo: ${chunk.content}`,
-      ].join("\n");
-    })
-    .join("\n\n---\n\n");
+export function selectRelevantChunks(chunks: Chunk[], minimum: number): Chunk[] {
+  return chunks.filter((chunk) => Number.isFinite(chunk.similarity) && chunk.similarity >= minimum);
+}
+
+export function groundedResponse(
+  content: string | null | undefined,
+  chunks: Chunk[],
+  classification: IntentClassification,
+): ChatResponse {
+  const fallback: ChatResponse = {
+    answer: NOT_FOUND, sources: [],
+    intent: classification.intent, confidence: classification.confidence,
+  };
+  let result: unknown;
+  try { result = JSON.parse(content ?? ""); } catch { return fallback; }
+  if (!result || typeof result !== "object") return fallback;
+  const { found, answer, sourceIds } = result as Record<string, unknown>;
+  if (found !== true || typeof answer !== "string" || !answer.trim() ||
+      answer.trim() === NOT_FOUND || !Array.isArray(sourceIds) || sourceIds.length === 0) return fallback;
+
+  const byId = new Map(chunks.map((chunk) => [chunk.id, chunk]));
+  // Qualquer referencia desconhecida invalida a resposta inteira.
+  if (sourceIds.some((id) => typeof id !== "string" || !byId.has(id))) return fallback;
+  const used = [...new Set(sourceIds as string[])].map((id) => byId.get(id)!);
+  const sources = [...new Map(used.map((chunk) => [
+    JSON.stringify([chunk.document_name, chunk.page_number]),
+    { documentName: chunk.document_name, pageNumber: chunk.page_number, similarity: chunk.similarity },
+  ])).values()];
+  return { ...fallback, answer: answer.trim(), sources };
 }
 
 export async function answerWithDocuments(
   question: string,
   classification: IntentClassification,
 ): Promise<ChatResponse> {
-  const searchPlan = await buildDocumentSearchPlan(question);
-
-  console.log("Plano de busca documental:", searchPlan);
-
-  const chunks = await searchDocumentChunksWithPlan(searchPlan);
-
-  console.log(
-    "Busca documental:",
-    chunks.map((chunk) => ({
-      document: chunk.document_name,
-      page: chunk.page_number,
-      similarity: chunk.similarity,
-      preview: chunk.content.slice(0, 160),
-    })),
-  );
-
-  // Resultados lexicais recebem similiridade 1 e nao dependem do limite vetorial
-  const hasLexicalResult = chunks.some((chunk) => chunk.similarity === 1);
-
-  if (
-    chunks.length === 0 ||
-    (!hasLexicalResult && chunks[0].similarity < MIN_SIMILARITY)
-  ) {
-    return {
-      answer: "Nao encontrei essa informacao nos documentos fornecidos.",
-      sources: [],
-      intent: classification.intent,
-      confidence: classification.confidence,
-    };
-  }
-  const context = formatContext(chunks);
+  const plan = await buildDocumentSearchPlan(question);
+  const chunks = selectRelevantChunks(await searchDocumentChunksWithPlan(plan), MIN_SIMILARITY);
+  if (!chunks.length) return groundedResponse(null, [], classification);
 
   const completion = await openai.chat.completions.create({
     model: "gpt-5.4",
     temperature: 0,
+    response_format: {
+      type: "json_schema",
+      json_schema: {
+        name: "grounded_document_answer", strict: true,
+        schema: {
+          type: "object", additionalProperties: false,
+          properties: {
+            found: { type: "boolean" }, answer: { type: "string" },
+            sourceIds: { type: "array", items: { type: "string" } },
+          },
+          required: ["found", "answer", "sourceIds"],
+        },
+      },
+    },
     messages: [
-      {
-        role: "developer",
-        content: documentAnswerPrompt,
-      },
-      {
-        role: "user",
-        content: `
-CONTEXTO DOCUMENTAL:
-${context}
-
-PERGUNTA:
-${question}
-        `.trim(),
-      },
+      { role: "developer", content: documentAnswerPrompt },
+      { role: "user", content: JSON.stringify({
+        question,
+        context: chunks.map((chunk) => ({
+          id: chunk.id, documentName: chunk.document_name,
+          pageNumber: chunk.page_number, content: chunk.content,
+        })),
+      }) },
     ],
   });
-
-  const answer =
-    completion.choices[0]?.message?.content ??
-    "Nao encontrei essa informacao nos documentos fornecidos.";
-
-  const uniqueSources = Array.from(
-    new Map(
-      chunks.map((chunk) => [
-        `${chunk.document_name}-${chunk.page_number ?? "sem-pagina"}`,
-        {
-          documentName: chunk.document_name,
-          pageNumber: chunk.page_number,
-          similarity: chunk.similarity,
-        },
-      ]),
-    ).values(),
-  );
-
-  return {
-    answer,
-    intent: classification.intent,
-    confidence: classification.confidence,
-    sources: uniqueSources,
-  };
+  return groundedResponse(completion.choices[0]?.message?.content, chunks, classification);
 }
