@@ -116,8 +116,7 @@ export default function App() {
           >
             <Stack
               direction={{ xs: "column", md: "row" }}
-              justifyContent="space-between"
-              gap={3}
+              sx={{ justifyContent: "space-between", gap: 3 }}
             >
               <Box>
                 <Chip
@@ -143,9 +142,8 @@ export default function App() {
                     fontSize: 18,
                   }}
                 >
-                  Consulte documentos contabeis vetorizados ou tire duvidas
-                  gerais sobre contabilidade com respostas organizadas e fontes
-                  visiveis.
+                  Consulte seus documentos contabeis com respostas baseadas
+                  no contexto recuperado e fontes visiveis.
                 </Typography>
               </Box>
               <Stack
@@ -166,7 +164,7 @@ export default function App() {
 
                 <MetricCard
                   icon={<QueryStatsRoundedIcon />}
-                  label="Fontes usadas"
+                  label="Fontes citadas"
                   value={String(totalSources)}
                 />
               </Stack>{" "}
@@ -192,8 +190,8 @@ export default function App() {
               <UploadDocument />
 
               <Alert severity="info" sx={{ mt: 2 }}>
-                Dica: perguntas sobre dados especificos do PDF usam as fontes
-                carregadas. Perguntas gerais seguem o modo contabil aberto.
+                Todas as respostas contabeis dependem dos documentos carregados.
+                Sem informacao suficiente, a IA deve admitir que nao encontrou a resposta.
               </Alert>
             </Box>
 
@@ -235,7 +233,7 @@ export default function App() {
                       <MessageBubble key={index} message={message} />
                     ))}
                     {loading && (
-                      <Stack direction="row" spacing={3} alignItems="center">
+                      <Stack direction="row" spacing={3} sx={{ alignItems: "center" }}>
                         <Avatar
                           sx={{
                             bgcolor: "primary.light",
@@ -259,7 +257,7 @@ export default function App() {
                             boxShadow: "0 12px 28px rgba(15, 23, 42, 0.05)",
                           }}
                         >
-                          <Stack direction="row" gap={1.5} alignItems="center">
+                          <Stack direction="row" sx={{ gap: 1.5, alignItems: "center" }}>
                             <CircularProgress size={18} />
                             <Typography color="text.secondary">
                               Analisando a pergunta...
@@ -279,7 +277,7 @@ export default function App() {
                   direction={{ xs: "column", sm: "row" }}
                   spacing={2}
                   useFlexGap
-                  alignItems="stretch"
+                  sx={{ alignItems: "stretch" }}
                 >
                   <TextField
                     fullWidth
@@ -349,7 +347,7 @@ function MetricCard({
         borderRadius: 3,
       }}
     >
-      <Stack direction="row" gap={1.5} alignItems="center">
+      <Stack direction="row" sx={{ gap: 1.5, alignItems: "center" }}>
         <Avatar sx={{ bgcolor: "rgba(255,255,255,0.18)", color: "white" }}>
           {icon}
         </Avatar>
@@ -406,10 +404,10 @@ function MessageBubble({ message }: { message: Message }) {
   return (
     <Stack
       direction="row"
-      gap={1.5}
-      justifyContent={isUser ? "flex-end" : "flex-start"}
-      alignItems="flex-start"
       sx={{
+        gap: 1.5,
+        justifyContent: isUser ? "flex-end" : "flex-start",
+        alignItems: "flex-start",
         width: "100%",
       }}
     >
@@ -475,10 +473,10 @@ function MessageBubble({ message }: { message: Message }) {
         {message.sources && message.sources.length > 0 && (
           <Stack
             direction="row"
-            gap={1}
-            flexWrap="wrap"
             useFlexGap
             sx={{
+              gap: 1,
+              flexWrap: "wrap",
               mt: 1.25,
               maxWidth: "100%",
               overflow: "hidden",
